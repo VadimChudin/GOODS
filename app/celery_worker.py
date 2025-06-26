@@ -5,7 +5,8 @@ import pytesseract
 from PIL import Image
 import os
 
-celery = Celery("worker", broker="pyamqp://guest@localhost//")
+celery = Celery("worker", broker="pyamqp://guest@rabbitmq//")
+
 
 @celery.task
 def analyze_document_task(doc_id: int):

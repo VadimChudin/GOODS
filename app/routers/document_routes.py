@@ -36,11 +36,12 @@ def doc_delete(doc_id: int, db: Session = Depends(get_db)):
     if not doc:
         raise HTTPException(status_code=404, detail="Document not found")
     file_path = os.path.join(DOCUMENTS_DIR, doc.filename)
-    if os.path.exists(file_path):
-        os.remove(file_path)
+
     db.delete(doc)
     db.commit()
-    return {"detail": "Document deleted"}
+    if os.path.exists(file_path):
+        os.remove(file_path)
+    return {"detail": "документ успешно удален!"}
 
 @router.post("/doc_analyse", summary="Анализ документа")
 def doc_analyse(doc_id: int):

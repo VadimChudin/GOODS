@@ -1,7 +1,7 @@
 from pydantic import BaseSettings
 
 class Settings(BaseSettings):
-    database_url: str
+    database_url: str = "postgresql://admin:admin@postgres:5432/documents_db"
     secret_key: str
 
     class Config:
