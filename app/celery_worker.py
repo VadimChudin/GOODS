@@ -1,43 +1,22 @@
 from celery import Celery
+from app.database import SessionLocal
+from app.models import Document, DocumentText
 import pytesseract
 from PIL import Image
-from app.models import Document, DocumentText
-from app.database import SessionLocal
 import os
 
-app = Celery(
-    'tasks',
-    broker='amqp://guest@rabbitmq//',
-    broker_connection_retry_on_startup=True
-)
+celery = Celery("worker", broker="pyamqp://guest@localhost//")
 
-
-@app.task(bind=True, max_retries=3)
-def analyze_document_task(self, document_id):
+@celery.task
+def analyze_document_task(doc_id: int):
     db = SessionLocal()
     try:
-        doc = db.query(Document).get(document_id)
-        if not doc:
-            raise ValueError(f"Document {document_id} not found")
-
-        if not os.path.exists(doc.path):
-            raise FileNotFoundError(f"File {doc.path} missing")
-
-        text = pytesseract.image_to_string(Image.open(doc.path))
-        if not text.strip():
-            raise ValueError("No text recognized")
-
-        existing = db.query(DocumentText).filter_by(id_doc=document_id).first()
-        if existing:
-            existing.text = text
-        else:
-            db.add(DocumentText(id_doc=document_id, text=text))
-
-        db.commit()
-        return {"status": "success", "document_id": document_id}
-
-    except Exception as e:
-        db.rollback()
-        raise self.retry(exc=e)
+        doc = db.query(Document).filter(Document.id == doc_id).first()
+        if doc:
+            file_path = os.path.join("documents", doc.filename)
+            text = pytesseract.image_to_string(Image.open(file_path))
+            doc_text = DocumentText(doc_id=doc.id, text=text)
+            db.add(doc_text)
+            db.commit()
     finally:
         db.close()
