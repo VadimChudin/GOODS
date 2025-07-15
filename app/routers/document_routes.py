@@ -52,3 +52,4 @@ def doc_analyse(doc_id: int):
 def get_text(doc_id: int, db: Session = Depends(get_db)):
     text = db.query(DocumentText).filter(DocumentText.doc_id == doc_id).first()
     return {"text": text.text if text else ""}
+

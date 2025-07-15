@@ -13,3 +13,4 @@ class DocumentText(Base):
     id = Column(Integer, primary_key=True, index=True)
     doc_id = Column(Integer, ForeignKey("documents.id"))
     text = Column(String)
+
