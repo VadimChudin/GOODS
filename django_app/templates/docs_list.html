@@ -1,0 +1,29 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Список документов</title>
+    <style>
+        .docs-grid {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 20px;
+        }
+        .doc-item {
+            border: 1px solid #ddd;
+            padding: 10px;
+            text-align: center;
+        }
+    </style>
+</head>
+<body>
+    <h1>Документы для анализа</h1>
+    <div class="docs-grid">
+        {% for doc in docs %}
+        <div class="doc-item">
+            <p>Документ #{{ doc.id }}</p>
+            <p>{{ doc.size }} КБ</p>
+        </div>
+        {% endfor %}
+    </div>
+</body>
+</html>
