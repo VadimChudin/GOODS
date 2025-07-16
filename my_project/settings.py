@@ -1,9 +1,12 @@
 import os
+import dj_database_url
+from dotenv import load_dotenv
+load_dotenv()
 
 BASE_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 
-SECRET_KEY = 'ваш-secret-key-здесь'
-DEBUG = True
+SECRET_KEY = os.getenv('SECRET_KEY', 'fallback-key')
+
 
 ALLOWED_HOSTS = ['*']
 
@@ -48,14 +51,7 @@ TEMPLATES = [
 WSGI_APPLICATION = 'my_project.wsgi.application'
 
 DATABASES = {
-    'default': {
-        'ENGINE': 'django.db.backends.postgresql',
-        'NAME': 'documents_db',
-        'USER': 'admin',
-        'PASSWORD': 'admin',
-        'HOST': 'postgres',
-        'PORT': '5432',
-    }
+    'default': dj_database_url.config(default=os.getenv('DATABASE_URL'))
 }
 
 AUTH_PASSWORD_VALIDATORS = [
