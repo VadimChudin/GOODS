@@ -8,7 +8,7 @@ import shutil
 
 router = APIRouter()
 
-DOCUMENTS_DIR = "documents"
+DOCUMENTS_DIR = "/app/documents"
 os.makedirs(DOCUMENTS_DIR, exist_ok=True)
 
 def get_db():
