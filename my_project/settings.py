@@ -1,5 +1,6 @@
 import os
 import dj_database_url
+from django.conf import settings
 from dotenv import load_dotenv
 
 load_dotenv()
@@ -19,7 +20,7 @@ INSTALLED_APPS = [
     'django.contrib.sessions',
     'django.contrib.messages',
     'django.contrib.staticfiles',
-    'django_app',  # Упрощенное подключение
+    'django_app',
 ]
 
 MIDDLEWARE = [
@@ -84,7 +85,7 @@ CELERY_BROKER_URL = 'amqp://guest:guest@rabbitmq:5672//'
 CELERY_RESULT_BACKEND = 'rpc://'
 
 # FastAPI URL
-FASTAPI_URL = 'http://app:8000'  # Исправлено имя сервиса
+FASTAPI_URL = 'http://app:8000'
 
 # Статические файлы
 STATIC_URL = '/static/'
@@ -93,5 +94,10 @@ STATIC_ROOT = os.path.join(BASE_DIR, 'staticfiles')
 # Медиа файлы
 MEDIA_URL = '/media/'
 MEDIA_ROOT = os.path.join(BASE_DIR, 'media')
+
+# Добавим обработку статических файлов в development
+if DEBUG:
+    from django.conf.urls.static import static
+    from django.urls import path, include
 
 DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'

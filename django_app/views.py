@@ -4,6 +4,8 @@ from django.core.files.storage import FileSystemStorage
 from django.http import Http404
 from .services import FastAPIService
 from django.conf import settings
+import requests
+import os
 
 
 def docs_list(request):
@@ -16,7 +18,7 @@ def docs_list(request):
 
 
 def upload_file(request):
-    """Загрузка файла"""
+    """Загрузка файла с синхронизацией в FastAPI"""
     if request.method == 'POST' and request.FILES.get('file'):
         try:
             uploaded_file = request.FILES['file']
@@ -32,6 +34,24 @@ def upload_file(request):
             )
             doc.save()
 
+            # Загрузка файла в FastAPI
+            try:
+                file_full_path = fs.path(filename)
+                with open(file_full_path, 'rb') as f:
+                    files = {'file': (uploaded_file.name, f, uploaded_file.content_type)}
+                    response = requests.post(
+                        f"{settings.FASTAPI_URL}/upload_doc",
+                        files=files,
+                        timeout=30
+                    )
+                    if response.status_code == 200:
+                        fastapi_doc_id = response.json().get('doc_id')
+                        print(f"Файл загружен в FastAPI с ID: {fastapi_doc_id}")
+                    else:
+                        print(f"Ошибка загрузки в FastAPI: {response.text}")
+            except Exception as e:
+                print(f"Ошибка при загрузке в FastAPI: {e}")
+
         except Exception as e:
             return render(request, 'error.html', {
                 'error': f'Ошибка при загрузке файла: {str(e)}'
@@ -41,7 +61,7 @@ def upload_file(request):
 
 
 def analyze_document(request, doc_id):
-
+    """Анализ документа"""
     try:
         doc = Docs.objects.get(id=doc_id)
 
@@ -53,7 +73,7 @@ def analyze_document(request, doc_id):
 
         return render(request, 'analysis_result.html', {
             'doc': doc,
-            'status': analysis_result.get('status'),
+            'status': analysis_result.get('detail', 'Анализ запущен'),
             'text': text_result.get('text', 'Текст не распознан'),
             'error': text_result.get('error')
         })
@@ -67,17 +87,33 @@ def analyze_document(request, doc_id):
 
 
 def delete_document(request, doc_id):
-    """Удаление документа"""
+    """Удаление документа с синхронизацией"""
     try:
         doc = Docs.objects.get(id=doc_id)
 
-        # Удаление через FastAPI
-        if FastAPIService.delete_document(doc_id):
-            # Удаление из Django
-            doc.delete()
-            return redirect('docs_list')
-        else:
-            raise Exception('Не удалось удалить документ в FastAPI')
+        # Удаление файла из файловой системы
+        if doc.file_path:
+            try:
+                # Получаем полный путь к файлу
+                file_path = os.path.join(settings.MEDIA_ROOT, doc.file_path.lstrip('/media/'))
+                if os.path.exists(file_path):
+                    os.remove(file_path)
+                    print(f"Файл {file_path} удален из файловой системы")
+            except Exception as e:
+                print(f"Ошибка при удалении файла: {e}")
+
+        # Попытка удаления через FastAPI (не критично если не удалось)
+        try:
+            FastAPIService.delete_document(doc_id)
+            print(f"Документ {doc_id} удален из FastAPI")
+        except Exception as e:
+            print(f"Ошибка при удалении из FastAPI: {e}")
+
+        # Удаление из Django БД
+        doc.delete()
+        print(f"Документ {doc_id} удален из Django БД")
+
+        return redirect('docs_list')
 
     except Docs.DoesNotExist:
         raise Http404("Документ не найден")
