@@ -10,33 +10,12 @@ services:
     volumes:
       - postgres_data:/var/lib/postgresql/data
     healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U admin"]
+      test: ["CMD-SHELL", "pg_isready -U admin -d documents_db"]
       interval: 5s
       timeout: 5s
       retries: 10
     ports:
       - "5432:5432"
-
-  django:
-    healthcheck:
-      test: [ "CMD", "curl", "-f", "http://localhost:8000" ]
-      interval: 10s
-      timeout: 5s
-      retries: 5
-    build:
-      context: .
-      dockerfile: Django.Dockerfile
-    volumes:
-      - ./django_app:/app/django_app
-      - ./my_project:/app/my_project
-      - ./manage.py:/app/manage.py
-    environment:
-      - DATABASE_URL=postgresql://admin:admin@postgres:5432/documents_db
-    ports:
-      - "8010:8000"
-    depends_on:
-      postgres:
-        condition: service_healthy
 
   rabbitmq:
     image: rabbitmq:3-management
@@ -60,7 +39,6 @@ services:
       - ./.env:/app/.env
       - ./app:/app/app
       - ./documents:/app/documents
-    command: bash -c "while true; do uvicorn app.main:app --host 0.0.0.0 --port 8000; sleep 1; done"
     environment:
       - PYTHONPATH=/app
       - DATABASE_URL=postgresql://admin:admin@postgres:5432/documents_db
@@ -72,6 +50,7 @@ services:
         condition: service_healthy
       rabbitmq:
         condition: service_healthy
+    restart: unless-stopped
 
   worker:
     build:
@@ -80,12 +59,11 @@ services:
     volumes:
       - ./app:/app/app
       - ./documents:/app/documents
-    command: bash -c "while true; do celery -A app.celery_worker worker --loglevel=info; sleep 5; done"
+    command: bash -c "sleep 10 && celery -A app.celery_worker worker --loglevel=info"
     environment:
-
-      PYTHONPATH: /app
-      DATABASE_URL: postgresql://admin:admin@postgres:5432/documents_db
-      CELERY_BROKER_URL: amqp://guest:guest@rabbitmq:5672//
+      - PYTHONPATH=/app
+      - DATABASE_URL=postgresql://admin:admin@postgres:5432/documents_db
+      - CELERY_BROKER_URL=amqp://guest:guest@rabbitmq:5672//
     depends_on:
       postgres:
         condition: service_healthy
@@ -93,6 +71,52 @@ services:
         condition: service_healthy
       app:
         condition: service_started
+    restart: unless-stopped
+
+  django:
+    build:
+      context: .
+      dockerfile: Django.Dockerfile
+    volumes:
+      - ./django_app:/app/django_app
+      - ./my_project:/app/my_project
+      - ./manage.py:/app/manage.py
+      - ./media:/app/media
+    environment:
+      - DATABASE_URL=postgresql://admin:admin@postgres:5432/documents_db
+      - DJANGO_SECRET_KEY=your-secret-key-here
+      - DJANGO_DEBUG=True
+      - FASTAPI_URL=http://app:8000
+    ports:
+      - "8010:8000"
+    depends_on:
+      postgres:
+        condition: service_healthy
+      app:
+        condition: service_started
+    restart: unless-stopped
+
+  migrations:
+    build:
+      context: .
+      dockerfile: FastAPI.Dockerfile
+    volumes:
+      - .:/app
+    environment:
+      - PYTHONPATH=/app
+      - DATABASE_URL=postgresql://admin:admin@postgres:5432/documents_db
+    command: >
+      bash -c "
+        while ! pg_isready -h postgres -U admin -d documents_db -t 1; do 
+          echo 'Waiting for postgres...'; 
+          sleep 2; 
+        done;
+        echo 'PostgreSQL is ready!';
+        alembic upgrade head
+      "
+    depends_on:
+      postgres:
+        condition: service_healthy
 
   pgadmin:
     image: dpage/pgadmin4
@@ -101,28 +125,6 @@ services:
       PGADMIN_DEFAULT_PASSWORD: admin
     ports:
       - "5050:80"
-    depends_on:
-      postgres:
-        condition: service_healthy
-
-
-  migrations:
-    build:
-     context: .
-     dockerfile: FastAPI.Dockerfile
-    volumes:
-      - .:/app
-    environment:
-          PYTHONPATH: /app
-          DATABASE_URL: postgresql://admin:admin@postgres:5432/documents_db
-    command:
-      - /bin/sh
-      - -c
-      - |
-        while ! pg_isready -h postgres -U admin -d documents_db -t 1; do sleep 2; done
-        alembic revision --autogenerate -m 'initial'
-        alembic upgrade head
-
     depends_on:
       postgres:
         condition: service_healthy

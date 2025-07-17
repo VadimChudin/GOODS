@@ -1,0 +1,50 @@
+from django.conf import settings
+from django.db import migrations, models
+import django.db.models.deletion
+
+
+class Migration(migrations.Migration):
+
+    initial = True
+
+    dependencies = [
+        migrations.swappable_dependency(settings.AUTH_USER_MODEL),
+    ]
+
+    operations = [
+        migrations.CreateModel(
+            name='Docs',
+            fields=[
+                ('id', models.BigAutoField(auto_created=True, primary_key=True, serialize=False, verbose_name='ID')),
+                ('file_path', models.CharField(max_length=255, verbose_name='Путь к файлу')),
+                ('size', models.FloatField(verbose_name='Размер (КБ)')),
+            ],
+        ),
+        migrations.CreateModel(
+            name='Price',
+            fields=[
+                ('id', models.BigAutoField(auto_created=True, primary_key=True, serialize=False, verbose_name='ID')),
+                ('file_type', models.CharField(max_length=10, verbose_name='Тип файла')),
+                ('price', models.FloatField(verbose_name='Цена за 1 КБ')),
+            ],
+        ),
+        migrations.CreateModel(
+            name='UsersToDocs',
+            fields=[
+                ('id', models.BigAutoField(auto_created=True, primary_key=True, serialize=False, verbose_name='ID')),
+                ('username', models.CharField(max_length=100, verbose_name='Имя пользователя')),
+                ('docs', models.ForeignKey(on_delete=django.db.models.deletion.CASCADE, to='django_app.docs', verbose_name='Документ')),
+            ],
+        ),
+        migrations.CreateModel(
+            name='Cart',
+            fields=[
+                ('id', models.BigAutoField(auto_created=True, primary_key=True, serialize=False, verbose_name='ID')),
+                ('order_price', models.FloatField(verbose_name='Стоимость заказа')),
+                ('payment', models.BooleanField(default=False, verbose_name='Оплачено')),
+                ('docs', models.ForeignKey(on_delete=django.db.models.deletion.CASCADE, to='django_app.docs', verbose_name='Документ')),
+                ('user', models.ForeignKey(on_delete=django.db.models.deletion.CASCADE, to=settings.AUTH_USER_MODEL, verbose_name='Пользователь')),
+            ],
+        ),
+    ]
+
