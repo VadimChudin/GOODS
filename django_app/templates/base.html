@@ -1,0 +1,20 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    {% load static %}
+<link rel="stylesheet" href="{% static 'css/style.css' %}">
+    <meta charset="UTF-8">
+    <title>{% block title %}Doc-Analyzer{% endblock %}</title>
+</head>
+<body>
+    {% if user.is_authenticated %}
+        Привет,избранный {{ user.username }}! |
+        <a href="{% url 'logout' %}">Выйти</a>
+    {% else %}
+        <a href="{% url 'login' %}">Войти </a> |
+        <a href="{% url 'register' %}">Регистрация</a>
+    {% endif %}
+    <hr>
+    {% block content %}{% endblock %}
+</body>
+</html>

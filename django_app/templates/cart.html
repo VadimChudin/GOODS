@@ -1,0 +1,20 @@
+{% extends 'base.html' %}
+{% block content %}
+<h2>Корзина</h2>
+{% for item in items %}
+    <div>
+        <img src="{{ item.docs.file_path }}" width="100">
+        <span>ID: {{ item.docs.id }} | Цена: {{ item.order_price }} руб</span>
+    </div>
+{% empty %}
+    <p>Корзина пуста</p>
+{% endfor %}
+
+{% if items %}
+    <h3>Итого: {{ total }} руб</h3>
+    <form method="post" action="{% url 'pay_cart' %}">
+        {% csrf_token %}
+        <button type="submit">Оплатить</button>
+    </form>
+{% endif %}
+{% endblock %}

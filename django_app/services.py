@@ -24,7 +24,7 @@ class FastAPIService:
     @staticmethod
     def get_text(doc_id):
         """Получение распознанного текста из FastAPI"""
-        # Ждем немного, чтобы анализ успел завершиться
+
         time.sleep(2)
 
         try:

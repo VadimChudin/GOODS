@@ -1,41 +1,23 @@
-<!DOCTYPE html>
-<html lang="ru">
-<head>
-    <meta charset="UTF-8">
-    <title>Результат анализа</title>
-    <style>
-        .container {
-            max-width: 800px;
-            margin: 0 auto;
-        }
-        .doc-info {
-            margin-bottom: 20px;
-        }
-        .text-result {
-            width: 100%;
-            min-height: 300px;
-            padding: 10px;
-        }
-    </style>
-</head>
-<body>
-    <div class="container">
-        <h1>Результат анализа документа #{{ doc.id }}</h1>
+{% extends 'base.html' %}
 
-        <div class="doc-info">
-            <p><strong>Статус:</strong> {{ status }}</p>
-            <img src="{{ doc.file_path }}" style="max-width: 300px;">
-        </div>
+{% block content %}
+<h1>Результат анализа документа #{{ doc.id }}</h1>
 
-        <h2>Распознанный текст:</h2>
-        {% if error %}
-            <div class="error">{{ error }}</div>
-        {% endif %}
-        <textarea class="text-result" readonly>{{ text }}</textarea>
+<div class="doc-info">
+    <p><strong>Статус:</strong> {{ status|default:"Анализ завершён" }}</p>
+    <img src="{{ doc.file_path }}" style="max-width: 300px;">
+</div>
 
-        <div style="margin-top: 20px;">
-            <a href="/">Вернуться к списку</a>
-        </div>
-    </div>
-</body>
-</html>
+<h2>Распознанный текст:</h2>
+{% if error %}
+    <div class="error">{{ error }}</div>
+{% endif %}
+<textarea class="text-result" readonly>{{ text }}</textarea>
+
+<h3>Стоимость анализа:</h3>
+<p>{{ price|floatformat:2 }} руб</p>
+
+<div style="margin-top: 20px;">
+    <a href="/">Вернуться к списку</a>
+</div>
+{% endblock %}

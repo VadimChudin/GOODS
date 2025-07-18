@@ -31,6 +31,25 @@ services:
       timeout: 5s
       retries: 5
 
+  migrations:
+    build:
+      context: .
+      dockerfile: FastAPI.Dockerfile
+    volumes:
+      - .:/app
+    environment:
+      - PYTHONPATH=/app
+      - DATABASE_URL=postgresql://admin:admin@postgres:5432/documents_db
+    working_dir: /app
+    command: >
+      sh -c "
+        alembic upgrade head &&
+        echo '✅ Alembic migrations finished'
+      "
+    depends_on:
+      postgres:
+        condition: service_healthy
+
   app:
     build:
       context: .
@@ -50,6 +69,8 @@ services:
         condition: service_healthy
       rabbitmq:
         condition: service_healthy
+      migrations:
+        condition: service_completed_successfully
     restart: unless-stopped
 
   worker:
@@ -69,8 +90,8 @@ services:
         condition: service_healthy
       rabbitmq:
         condition: service_healthy
-      app:
-        condition: service_started
+      migrations:
+        condition: service_completed_successfully
     restart: unless-stopped
 
   django:
@@ -92,24 +113,9 @@ services:
     depends_on:
       postgres:
         condition: service_healthy
-      app:
-        condition: service_started
+      migrations:
+        condition: service_completed_successfully
     restart: unless-stopped
-
-  migrations:
-    build:
-      context: .
-      dockerfile: FastAPI.Dockerfile
-    volumes:
-      - .:/app
-    environment:
-      - PYTHONPATH=/app
-      - DATABASE_URL=postgresql://admin:admin@postgres:5432/documents_db
-    working_dir: /app
-    command: bash init_migrations.sh
-    depends_on:
-      postgres:
-        condition: service_healthy
 
   pgadmin:
     image: dpage/pgadmin4
@@ -124,3 +130,4 @@ services:
 
 volumes:
   postgres_data:
+

@@ -42,7 +42,7 @@ def analyze_document_task(doc_id: int):
         # Распознавание текста
         try:
             # Настройки для tesseract
-            config = '--psm 6 -l rus+eng'  # Автоматическое определение структуры + русский и английский
+            config = '--psm 6 -l eng+rus'  # Автоматическое определение структуры + русский и английский
 
             image = Image.open(file_path)
             text = pytesseract.image_to_string(image, config=config)

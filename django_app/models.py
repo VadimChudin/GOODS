@@ -4,16 +4,17 @@ from django.contrib.auth.models import User
 class Docs(models.Model):
     file_path = models.CharField(max_length=255, verbose_name="Путь к файлу")
     size = models.FloatField(verbose_name="Размер (КБ)")
+    fastapi_id = models.PositiveIntegerField(verbose_name="FastAPI ID")
 
     def __str__(self):
-        return f"Документ #{self.id}"
+        return f"Док #{self.id} (FastAPI {self.fastapi_id})"
 
 class UsersToDocs(models.Model):
     username = models.CharField(max_length=100, verbose_name="Имя пользователя")
     docs = models.ForeignKey(Docs, on_delete=models.CASCADE, verbose_name="Документ")
 
     def __str__(self):
-        return f"{self.username} -> Документ #{self.docs.id}"
+        return f"{self.username} -> Док #{self.docs.id}"
 
 class Price(models.Model):
     file_type = models.CharField(max_length=10, verbose_name="Тип файла")
